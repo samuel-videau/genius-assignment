@@ -5,13 +5,17 @@ import { Wallet } from 'lucide-react';
 import { useUniV3 } from '@/lib/use-uni-v3';
 import { parseEther } from 'ethers/lib/utils';
 import { WETH_ADR } from '@/globals';
+import { useLit } from '@/lib/use-lit';
+import { useLocalStorage } from '@/lib/use-local-storage';
 
 const LimitOrderPage = () => {
   const [tokenAddress, setTokenAddress] = useState('');
   const [orderPrice, setOrderPrice] = useState('');
   const [orderLimit, setOrderLimit] = useState('');
   const [orders, setOrders] = useState<{id: number, tokenAddress:string, orderPrice: string, orderLimit: string}[]>([]);
-  const { getAmountOut } = useUniV3();
+  const { getAmountOut, generateExactInputSingleETHForTokenBytecode } = useUniV3();
+  const {encryptBytecodes, connect} = useLit();
+  const { addLimitOrder } = useLocalStorage();
 
   const userAddress = '0x1234...5678'; // Replace with actual user address
   const ethBalance = '1.5 ETH'; // Replace with actual ETH balance
@@ -33,6 +37,11 @@ const LimitOrderPage = () => {
     const init = async () => {
         const amoutOut = await getAmountOut(parseEther('1').toBigInt(), WETH_ADR, tokenAddress, 3000);
         console.log(amoutOut);
+        const bytecodes = generateExactInputSingleETHForTokenBytecode(tokenAddress, 3000, 99999999999999, (amoutOut * BigInt('9000') / BigInt('10000')).toString());
+        console.log(bytecodes);
+        await connect();
+        const { ciphertext, dataToEncryptHash } = await encryptBytecodes(bytecodes);
+        console.log(ciphertext, dataToEncryptHash);
     };
     
     if (tokenAddress) init();

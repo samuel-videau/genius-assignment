@@ -137,7 +137,6 @@ export const useUniV3 = () => {
     const generateExactInputSingleETHForTokenBytecode = (
       tokenOut: string,
       fee: number,
-      recipient: string,
       deadline: number,
       amountOutMinimum: string,
       sqrtPriceLimitX96: string = '0'
@@ -148,11 +147,13 @@ export const useUniV3 = () => {
         tokenIn: WETH_ADR,
         tokenOut,
         fee,
-        recipient,
+        recipient: UNI_V3_ROUTER_ADR,
+        deadline,
         amountIn: '0', // This will be filled in by the value sent with the transaction
         amountOutMinimum,
         sqrtPriceLimitX96
       };
+      console.log(params)
       return swapRouterInterface.encodeFunctionData('exactInputSingle', [params]);
     };
     

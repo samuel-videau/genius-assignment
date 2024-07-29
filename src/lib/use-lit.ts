@@ -92,6 +92,40 @@ export const useLit = () => {
       return await provider.fetchPKPsThroughRelayer(authMethod);
     }
 
+    const encryptBytecodes = async (bytecodes: string): Promise<{
+      ciphertext: string,
+      dataToEncryptHash: string,
+    }> => {
+      const accessControlConditions = [
+        {
+          contractAddress: "",
+          standardContractType: "",
+          chain: "ethereum",
+          method: "eth_getBalance",
+          parameters: [":userAddress", "latest"],
+          returnValueTest: {
+            comparator: ">=",
+            value: "1000000000000", // 0.000001 ETH
+          },
+        },
+      ];
+      
+      const { ciphertext, dataToEncryptHash } = await LitJsSdk.encryptString(
+        {
+          accessControlConditions,
+          dataToEncrypt: bytecodes,
+
+        },
+        client,
+      );
+
+      // Return the ciphertext and dataToEncryptHash
+      return {
+        ciphertext,
+        dataToEncryptHash,
+      };
+    }
+
     return {
         client,
         connect,
@@ -101,5 +135,6 @@ export const useLit = () => {
         handleRedirect,
         mintPkp,
         fetchPkps,
+        encryptBytecodes
     };
 }

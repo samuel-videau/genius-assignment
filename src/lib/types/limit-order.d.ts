@@ -1,6 +1,9 @@
-interface LimitOrder {
-    tokenIn: string;
+export interface LimitOrder {
     tokenOut: string;
     amountIn: string;
-    limitPrice: string;
+    amountOutMin: string;
+    encryption?: {
+      ciphertext: string, 
+      dataToEncryptHash: string
+    };
   }
