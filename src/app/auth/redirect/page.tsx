@@ -1,40 +1,75 @@
 'use client'
 
+import React, { useEffect, useState } from 'react';
 import { LIT_AUTH_REDIRECT_URL, LIT_NETWORK } from "@/globals";
 import { useLit } from "@/lib/use-lit";
-import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 export default function Redirect() {
   const { handleRedirect, fetchPkps, getSessionSigs, connect, mintPkp } = useLit();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
-      await connect();
-      console.log(`Connected to ${LIT_NETWORK}`);
-      const fullPath = LIT_AUTH_REDIRECT_URL + (searchParams.toString() ? `?${searchParams.toString()}` : '');
-      console.log(fullPath);
-      const auth = await handleRedirect(fullPath);
-      console.log(auth);
-      let pkps = await fetchPkps(auth);
-      console.log(pkps);
-      if (pkps.length === 0) {
-        await mintPkp(auth);
-        pkps = await fetchPkps(auth);
-        console.log('Minted PKP');
+      try {
+        setLoading(true);
+        await connect();
+        console.log(`Connected to ${LIT_NETWORK}`);
+        
+        const fullPath = LIT_AUTH_REDIRECT_URL + (searchParams.toString() ? `?${searchParams.toString()}` : '');
+        console.log(fullPath);
+        
+        const auth = await handleRedirect(fullPath);
+        console.log(auth);
+        
+        let pkps = await fetchPkps(auth);
         console.log(pkps);
+        
+        if (pkps.length === 0) {
+          await mintPkp(auth);
+          pkps = await fetchPkps(auth);
+          console.log('Minted PKP');
+          console.log(pkps);
+        }
+        
+        const session = await getSessionSigs(auth, pkps[0]);
+        console.log(session);
+        
+        // Redirect to dashboard
+        router.push('/swap');
+      } catch (err) {
+        console.error("Initialization error:", err);
+        setError("An error occurred during initialization. Please try again.");
+      } finally {
+        setLoading(false);
       }
-      const session = await getSessionSigs(auth, pkps[0]);
-      console.log(session)
     }
 
     init();
   }, []);
 
-  return (
-    <div>
-      Test
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+        <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+        <p className="mt-4 text-lg text-gray-700">Initializing...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+        <div className="p-4 bg-red-100 text-red-700 rounded-md">
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return null; // This will not be rendered as we're redirecting
 }
