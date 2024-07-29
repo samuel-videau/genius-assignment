@@ -115,11 +115,13 @@ export const useLit = () => {
       };
     }
 
-    const signAndExecute = async (encryption: Encryption, sessionSigs: SessionSigsMap): Promise<void> => {
+    const signAndExecute = async (encryption: Encryption, sessionSigs: SessionSigsMap, publicKey: string): Promise<void> => {
       const res = await client.executeJs({
         code: executeLimitOrderAction,
         sessionSigs,
-        jsParams: {...encryption, accessControlConditions: [
+        jsParams: {...encryption, 
+          publicKey,
+          accessControlConditions: [
           {
             contractAddress: '',
             standardContractType: '',

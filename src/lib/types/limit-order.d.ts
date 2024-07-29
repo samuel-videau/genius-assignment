@@ -4,7 +4,4 @@ export interface LimitOrder {
     amountIn: string;
     amountOutMinimum: string;
     deadline: string;
-    encryption?: {
-      
-    };
   }

@@ -156,62 +156,6 @@ export const useUniV3 = () => {
       console.log(params)
       return swapRouterInterface.encodeFunctionData('exactInputSingle', [params]);
     };
-    
-    const generateExactInputSingleTokenForETHBytecode = (
-      tokenIn: string,
-      fee: number,
-      recipient: string,
-      deadline: number,
-      amountIn: string,
-      amountOutMinimum: string,
-      sqrtPriceLimitX96: string = '0'
-    ): string => {
-      const swapRouterInterface = new ethers.utils.Interface(UniV3RouterAbi);
-
-      const params = {
-        tokenIn,
-        tokenOut: WETH_ADR,
-        fee,
-        recipient: UNI_V3_ROUTER_ADR, // Send WETH to the router
-        amountIn,
-        amountOutMinimum,
-        sqrtPriceLimitX96
-      };
-      const swapBytecode = swapRouterInterface.encodeFunctionData('exactInputSingle', [params]);
-      const unwrapBytecode = swapRouterInterface.encodeFunctionData('unwrapWETH9', [amountOutMinimum, recipient]);
-      const refundBytecode = swapRouterInterface.encodeFunctionData('refundETH');
-      
-      // Combine operations: swap, unwrap, and refund any leftover ETH
-      return ethers.utils.hexConcat([swapBytecode, unwrapBytecode, refundBytecode]);
-    };
-    
-    const generateExactOutputSingleTokenForETHBytecode = (
-      tokenIn: string,
-      fee: number,
-      recipient: string,
-      deadline: number,
-      amountOut: string,
-      amountInMaximum: string,
-      sqrtPriceLimitX96: string = '0'
-    ): string => {
-      const swapRouterInterface = new ethers.utils.Interface(UniV3RouterAbi);
-
-      const params = {
-        tokenIn,
-        tokenOut: WETH_ADR,
-        fee,
-        recipient: UNI_V3_ROUTER_ADR, // Send WETH to the router
-        amountOut,
-        amountInMaximum,
-        sqrtPriceLimitX96
-      };
-      const swapBytecode = swapRouterInterface.encodeFunctionData('exactOutputSingle', [params]);
-      const unwrapBytecode = swapRouterInterface.encodeFunctionData('unwrapWETH9', [amountOut, recipient]);
-      const refundBytecode = swapRouterInterface.encodeFunctionData('refundETH');
-      
-      // Combine operations: swap, unwrap, and refund any leftover ETH
-      return ethers.utils.hexConcat([swapBytecode, unwrapBytecode, refundBytecode]);
-    };
 
     return {
         fetchQuote,
@@ -220,8 +164,6 @@ export const useUniV3 = () => {
         getAmountOut,
         getAmountIn,
         generateUniswapV3SwapBytecode,
-        generateExactInputSingleETHForTokenBytecode,
-        generateExactInputSingleTokenForETHBytecode,
-        generateExactOutputSingleTokenForETHBytecode
+        generateExactInputSingleETHForTokenBytecode
     }
 }
