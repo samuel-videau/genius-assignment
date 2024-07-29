@@ -7,6 +7,7 @@ import { parseEther } from 'ethers/lib/utils';
 import { WETH_ADR } from '@/globals';
 import { useLit } from '@/lib/use-lit';
 import { useLocalStorage } from '@/lib/use-local-storage';
+import { LimitOrder } from '@/lib/types/limit-order';
 
 const LimitOrderPage = () => {
   const [tokenAddress, setTokenAddress] = useState('');
@@ -14,7 +15,7 @@ const LimitOrderPage = () => {
   const [orderLimit, setOrderLimit] = useState('');
   const [orders, setOrders] = useState<{id: number, tokenAddress:string, orderPrice: string, orderLimit: string}[]>([]);
   const { getAmountOut, generateExactInputSingleETHForTokenBytecode } = useUniV3();
-  const {encryptBytecodes, connect} = useLit();
+  const {encrypt, connect} = useLit();
   const { addLimitOrder } = useLocalStorage();
 
   const userAddress = '0x1234...5678'; // Replace with actual user address
@@ -35,12 +36,34 @@ const LimitOrderPage = () => {
 
   useEffect(() => {
     const init = async () => {
-        const amoutOut = await getAmountOut(parseEther('1').toBigInt(), WETH_ADR, tokenAddress, 3000);
+        const amountIn = parseEther('1');
+        const amoutOut = await getAmountOut(amountIn.toBigInt(), WETH_ADR, tokenAddress, 3000);
         console.log(amoutOut);
-        const bytecodes = generateExactInputSingleETHForTokenBytecode(tokenAddress, 3000, 99999999999999, (amoutOut * BigInt('9000') / BigInt('10000')).toString());
-        console.log(bytecodes);
+        
+        const limitOrder: LimitOrder = {
+            tokenOut: tokenAddress,
+            fee: 3000,
+            amountIn: amountIn.toString(),
+            amountOutMinimum: amoutOut.toString(),
+            deadline: Date.now().toString()
+        }
+
+        const accessControlConditions = [
+          {
+            contractAddress: '',
+            standardContractType: '',
+            chain: 'ethereum',
+            method: 'eth_getBalance',
+            parameters: [':userAddress', 'latest'],
+            returnValueTest: {
+              comparator: '>=',
+              value: '0',
+            },
+          },
+        ];
+
         await connect();
-        const { ciphertext, dataToEncryptHash } = await encryptBytecodes(bytecodes);
+        const { ciphertext, dataToEncryptHash } = await encrypt(JSON.stringify(limitOrder), accessControlConditions);
         console.log(ciphertext, dataToEncryptHash);
     };
     

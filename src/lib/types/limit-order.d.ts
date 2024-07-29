@@ -1,9 +1,10 @@
 export interface LimitOrder {
     tokenOut: string;
+    fee: number;
     amountIn: string;
-    amountOutMin: string;
+    amountOutMinimum: string;
+    deadline: string;
     encryption?: {
-      ciphertext: string, 
-      dataToEncryptHash: string
+      
     };
   }

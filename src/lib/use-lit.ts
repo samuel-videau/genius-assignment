@@ -2,7 +2,7 @@ import { LIT_AUTH_REDIRECT_URL, LIT_NETWORK, LIT_RELAY_API_KEY, LIT_RPC, LIT_SES
 import { createSiweMessageWithRecaps, generateAuthSig, LitAbility, LitAccessControlConditionResource, LitActionResource, LitPKPResource } from "@lit-protocol/auth-helpers";
 import { isSignInRedirect, LitAuthClient } from "@lit-protocol/lit-auth-client";
 import * as LitJsSdk from "@lit-protocol/lit-node-client";
-import type { SessionSigsMap, LIT_NETWORKS_KEYS, AuthMethod, IRelayPKP } from '@lit-protocol/types';
+import type { SessionSigsMap, LIT_NETWORKS_KEYS, AuthMethod, IRelayPKP, AccessControlConditions } from '@lit-protocol/types';
 import { ProviderType, AuthMethodScope } from '@lit-protocol/constants';
 
 export const useLit = () => {
@@ -92,29 +92,16 @@ export const useLit = () => {
       return await provider.fetchPKPsThroughRelayer(authMethod);
     }
 
-    const encryptBytecodes = async (bytecodes: string): Promise<{
+    const encrypt = async (message: string, conditions: AccessControlConditions): Promise<{
       ciphertext: string,
       dataToEncryptHash: string,
     }> => {
-      const accessControlConditions = [
-        {
-          contractAddress: "",
-          standardContractType: "",
-          chain: "ethereum",
-          method: "eth_getBalance",
-          parameters: [":userAddress", "latest"],
-          returnValueTest: {
-            comparator: ">=",
-            value: "1000000000000", // 0.000001 ETH
-          },
-        },
-      ];
+      
       
       const { ciphertext, dataToEncryptHash } = await LitJsSdk.encryptString(
         {
-          accessControlConditions,
-          dataToEncrypt: bytecodes,
-
+          accessControlConditions: conditions,
+          dataToEncrypt: message,
         },
         client,
       );
@@ -126,6 +113,8 @@ export const useLit = () => {
       };
     }
 
+
+
     return {
         client,
         connect,
@@ -135,6 +124,6 @@ export const useLit = () => {
         handleRedirect,
         mintPkp,
         fetchPkps,
-        encryptBytecodes
+        encrypt
     };
 }
