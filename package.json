@@ -10,16 +10,19 @@
   },
   "dependencies": {
     "@lit-protocol/auth-helpers": "^6.2.0",
+    "@lit-protocol/constants": "^6.3.0",
     "@lit-protocol/contracts-sdk": "^6.2.0",
     "@lit-protocol/lit-auth-client": "^6.2.0",
     "@lit-protocol/lit-node-client": "^6.2.0",
+    "@lit-protocol/types": "^6.3.0",
     "@reduxjs/toolkit": "^2.2.7",
     "@simplewebauthn/browser": "^10.0.0",
     "ethers": "^5.7.2",
     "lucide-react": "^0.417.0",
     "next": "14.2.5",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "react-redux": "^9.1.2"
   },
   "devDependencies": {
     "@types/node": "^20",

@@ -5,6 +5,8 @@ import { LIT_AUTH_REDIRECT_URL, LIT_NETWORK } from "@/globals";
 import { useLit } from "@/lib/use-lit";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useAppDispatch } from '@/store/hooks';
+import { setPkp, setSessionSigs } from '@/store/user-reducer';
 
 export default function Redirect() {
   const { handleRedirect, fetchPkps, getSessionSigs, connect, mintPkp } = useLit();
@@ -12,6 +14,8 @@ export default function Redirect() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     const init = async () => {
@@ -27,6 +31,7 @@ export default function Redirect() {
         console.log(auth);
         
         let pkps = await fetchPkps(auth);
+
         console.log(pkps);
         
         if (pkps.length === 0) {
@@ -36,8 +41,10 @@ export default function Redirect() {
           console.log(pkps);
         }
         
+        dispatch(setPkp(pkps[0]));
         const session = await getSessionSigs(auth, pkps[0]);
         console.log(session);
+        dispatch(setSessionSigs(session));
         
         // Redirect to dashboard
         router.push('/swap');

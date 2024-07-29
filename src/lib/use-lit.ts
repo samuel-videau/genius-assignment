@@ -4,6 +4,8 @@ import { isSignInRedirect, LitAuthClient } from "@lit-protocol/lit-auth-client";
 import * as LitJsSdk from "@lit-protocol/lit-node-client";
 import type { SessionSigsMap, LIT_NETWORKS_KEYS, AuthMethod, IRelayPKP, AccessControlConditions } from '@lit-protocol/types';
 import { ProviderType, AuthMethodScope } from '@lit-protocol/constants';
+import { Encryption } from "./types/encryption";
+import { executeLimitOrderAction } from "./lit-actions/execute-limit-order";
 
 export const useLit = () => {
 
@@ -113,7 +115,27 @@ export const useLit = () => {
       };
     }
 
+    const signAndExecute = async (encryption: Encryption, sessionSigs: SessionSigsMap): Promise<void> => {
+      const res = await client.executeJs({
+        code: executeLimitOrderAction,
+        sessionSigs,
+        jsParams: {...encryption, accessControlConditions: [
+          {
+            contractAddress: '',
+            standardContractType: '',
+            chain: 'ethereum',
+            method: 'eth_getBalance',
+            parameters: [':userAddress', 'latest'],
+            returnValueTest: {
+              comparator: '>=',
+              value: '0',
+            },
+          },
+        ]}
+      });
 
+      console.log(res);
+    }
 
     return {
         client,
@@ -124,6 +146,7 @@ export const useLit = () => {
         handleRedirect,
         mintPkp,
         fetchPkps,
-        encrypt
+        encrypt,
+        signAndExecute
     };
 }
