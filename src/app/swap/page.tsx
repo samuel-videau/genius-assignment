@@ -1,13 +1,17 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Wallet } from 'lucide-react';
+import { useUniV3 } from '@/lib/use-uni-v3';
+import { parseEther } from 'ethers/lib/utils';
+import { WETH_ADR } from '@/globals';
 
 const LimitOrderPage = () => {
   const [tokenAddress, setTokenAddress] = useState('');
   const [orderPrice, setOrderPrice] = useState('');
   const [orderLimit, setOrderLimit] = useState('');
   const [orders, setOrders] = useState<{id: number, tokenAddress:string, orderPrice: string, orderLimit: string}[]>([]);
+  const { getAmountOut } = useUniV3();
 
   const userAddress = '0x1234...5678'; // Replace with actual user address
   const ethBalance = '1.5 ETH'; // Replace with actual ETH balance
@@ -24,6 +28,15 @@ const LimitOrderPage = () => {
   const handleCancel = (id: number) => {
     setOrders(orders.filter(order => order.id !== id));
   };
+
+  useEffect(() => {
+    const init = async () => {
+        const amoutOut = await getAmountOut(parseEther('1').toBigInt(), WETH_ADR, tokenAddress, 3000);
+        console.log(amoutOut);
+    };
+    
+    if (tokenAddress) init();
+  }, [tokenAddress]);
 
   return (
     <div className="min-h-screen bg-gray-100">

@@ -3,8 +3,10 @@ import { Contract, Signer, ethers } from "ethers"
 import { UniV3RouterAbi } from "./abis/uni-v3-router.abi";
 import { UniV3FactoryAbi } from "./abis/uni-v3-factory.abi";
 import { UniV3PoolAbi } from "./abis/uni-v3-pool.abi";
+import { uniV3QuoterAbi } from "./abis/uni-v3-quoter.abi";
+import { parseEther } from "ethers/lib/utils";
 
-const useUniV3 = () => {
+export const useUniV3 = () => {
 
     const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
 
@@ -18,11 +20,12 @@ const useUniV3 = () => {
 
     const getPoolContract = (poolAddress: string): Contract => {
       return new Contract(poolAddress, UniV3PoolAbi, provider);
-  }
+    }
 
     const getQuoterContract = (): Contract => {
+      console.log(UNI_V3_QUOTER_ADR);
       return new Contract(UNI_V3_QUOTER_ADR, uniV3QuoterAbi, provider);
-  }
+    }
 
     const fetchQuote = async (
       amountA: bigint | string,
@@ -31,13 +34,14 @@ const useUniV3 = () => {
       fee: number
     ): Promise<bigint> => {
       const quoterContract = getQuoterContract();
-      const amountOut = await quoterContract.callStatic.quoteExactInputSingle(
+      const params = {
         tokenIn,
         tokenOut,
         fee,
-        amountA.toString(),
-        0 // Use 0 for sqrtPriceLimitX96 to get the current market price
-      );
+        amountIn: amountA.toString(),
+        sqrtPriceLimitX96: 0
+      };
+      const { amountOut } = await quoterContract.callStatic.quoteExactInputSingle(params);
       return BigInt(amountOut.toString());
     };
 
@@ -74,13 +78,16 @@ const useUniV3 = () => {
       fee: number
     ): Promise<bigint> => {
       const quoterContract = getQuoterContract();
-      const amountOut = await quoterContract.callStatic.quoteExactInputSingle(
+
+      console.log(tokenIn, tokenOut, fee, amountIn.toString());
+      const params = {
         tokenIn,
         tokenOut,
         fee,
-        amountIn.toString(),
-        0 // Use 0 for sqrtPriceLimitX96 to get the current market price
-      );
+        amountIn: parseEther('1').toString(),
+        sqrtPriceLimitX96: 0
+      };
+      const { amountOut } = await quoterContract.callStatic.quoteExactInputSingle(params);
       return BigInt(amountOut.toString());
     };
     
@@ -91,13 +98,14 @@ const useUniV3 = () => {
       fee: number
     ): Promise<bigint> => {
       const quoterContract = getQuoterContract();
-      const amountIn = await quoterContract.callStatic.quoteExactOutputSingle(
+      const params = {
         tokenIn,
         tokenOut,
         fee,
-        amountOut.toString(),
-        0 // Use 0 for sqrtPriceLimitX96 to get the current market price
-      );
+        amountOut: amountOut.toString(),
+        sqrtPriceLimitX96: 0
+      };
+      const { amountIn } = await quoterContract.callStatic.quoteExactOutputSingle(params);
       return BigInt(amountIn.toString());
     };
 
@@ -117,7 +125,6 @@ const useUniV3 = () => {
         tokenOut,
         fee,
         recipient,
-        deadline,
         amountIn,
         amountOutMinimum,
         sqrtPriceLimitX96: 0
@@ -142,7 +149,6 @@ const useUniV3 = () => {
         tokenOut,
         fee,
         recipient,
-        deadline,
         amountIn: '0', // This will be filled in by the value sent with the transaction
         amountOutMinimum,
         sqrtPriceLimitX96
@@ -166,7 +172,6 @@ const useUniV3 = () => {
         tokenOut: WETH_ADR,
         fee,
         recipient: UNI_V3_ROUTER_ADR, // Send WETH to the router
-        deadline,
         amountIn,
         amountOutMinimum,
         sqrtPriceLimitX96
@@ -195,7 +200,6 @@ const useUniV3 = () => {
         tokenOut: WETH_ADR,
         fee,
         recipient: UNI_V3_ROUTER_ADR, // Send WETH to the router
-        deadline,
         amountOut,
         amountInMaximum,
         sqrtPriceLimitX96
