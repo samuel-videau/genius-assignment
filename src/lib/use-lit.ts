@@ -1,4 +1,4 @@
-import { LIT_AUTH_REDIRECT_URL, LIT_NETWORK, LIT_RELAY_API_KEY, LIT_RPC, LIT_SESSION_TIME_M } from "@/globals";
+import { LIT_AUTH_REDIRECT_URL, LIT_NETWORK, LIT_RELAY_API_KEY, LIT_RPC, LIT_SESSION_TIME_S } from "@/globals";
 import { createSiweMessageWithRecaps, generateAuthSig, LitAbility, LitAccessControlConditionResource, LitActionResource, LitPKPResource } from "@lit-protocol/auth-helpers";
 import { isSignInRedirect, LitAuthClient } from "@lit-protocol/lit-auth-client";
 import * as LitJsSdk from "@lit-protocol/lit-node-client";
@@ -49,7 +49,7 @@ export const useLit = () => {
       return await client.getPkpSessionSigs({
         pkpPublicKey: pkp.publicKey,
         authMethods: [authMethod],
-        expiration: new Date(Date.now() + LIT_SESSION_TIME_M * 1000).toISOString(),
+        expiration: new Date(Date.now() + LIT_SESSION_TIME_S * 1000).toISOString(),
         resourceAbilityRequests: [
           {
             resource: new LitPKPResource('*'),
