@@ -1,5 +1,9 @@
-export const UNI_POOL_ADR = process.env.NEXT_PUBLIC_UNI_POOL_ADR || '';
-export const UNI_NFP_MANAGER_ADR = process.env.NEXT_PUBLIC_UNI_NFP_MANAGER_ADR || '';
+export const UNI_V3_ROUTER_ADR = process.env.NEXT_PUBLIC_UNI_V3_ROUTER_ADR || '';
+export const UNI_V3_QUOTER_ADR = process.env.NEXT_PUBLIC_UNI_V3_QUOTER_ADR || '';
+export const UNI_V3_FACTORY_ADR = process.env.NEXT_PUBLIC_UNI_V3_FACTORY_ADR || '';
+export const UNI_V3_POOL_ADR = process.env.NEXT_PUBLIC_UNI_V3_POOL_ADR || '';
+export const WETH_ADR = process.env.NEXT_PUBLIC_WETH_ADR || '';
+export const UNI_TOKEN_ADR = process.env.NEXT_PUBLIC_UNI_TOKEN_ADR || '';
 export const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || '';
 export const LIT_RPC = process.env.NEXT_PUBLIC_LIT_RPC || '';
 export const LIT_NETWORK = process.env.NEXT_PUBLIC_LIT_NETWORK || '';
