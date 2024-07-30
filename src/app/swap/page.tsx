@@ -87,7 +87,7 @@ const LimitOrderPage = () => {
     setIsLoading(true);
     try {
       await connect();
-      const res = await signAndExecute(encryption, user.sessionSigs, user.pkp?.publicKey || '');
+      const res = await signAndExecute(encryption, user.sessionSigs, user.pkp?.publicKey || '', user.pkp?.ethAddress || '');
       console.log(res);
       // Handle successful execution here (e.g., show a success message)
     } catch (error) {
