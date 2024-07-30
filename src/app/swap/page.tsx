@@ -1,33 +1,35 @@
 'use client'
 
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { Wallet } from 'lucide-react';
 import { useUniV3 } from '@/lib/use-uni-v3';
 import { formatEther, parseEther } from 'ethers/lib/utils';
 import { UNI_TOKEN_ADR, WETH_ADR } from '@/globals';
 import { useLit } from '@/lib/use-lit';
-import { useLocalStorage } from '@/lib/use-local-storage';
+import { STORAGE_KEY, useLocalStorage } from '@/lib/use-local-storage';
 import { LimitOrder } from '@/lib/types/limit-order';
 import { useAppSelector } from '@/store/hooks';
 import { useEthers } from '@/lib/use-ethers';
+import { Encryption } from '@/lib/types/encryption';
 
 const LimitOrderPage = () => {
   const [amountIn, setAmountIn] = useState('1');
   const [tokenWanted, setTokenWanted] = useState(UNI_TOKEN_ADR);
+  const [formTokenInfo, setFormTokenInfo] = useState({ name: '', symbol: '' });
+  const [orderTokenInfo, setOrderTokenInfo] = useState({ name: '', symbol: '' });
   const [priceWanted, setPriceWanted] = useState('');
   const [amountOut, setAmountOut] = useState('');
   const [timeLimit, setTimeLimit] = useState('10');
-  const [orders, setOrders] = useState<LimitOrder[]>([]);
-  const [initialised, setInitialised] = useState(false);
+  const [order, setOrder] = useState<LimitOrder | null>(null);
   const [userBalance, setUserBalance] = useState('0');
 
   const { getAmountOut, generateExactInputSingleETHForTokenBytecode } = useUniV3();
   const {encrypt, connect, signAndExecute} = useLit();
-  const { addLimitOrder } = useLocalStorage();
-  const { getBalanceOf, sendTransaction } = useEthers();
+  const { setValue, getValue } = useLocalStorage();
+  const { getBalanceOf, getTokenInfo } = useEthers();
   const user = useAppSelector((state) => state.user);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const encryptOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     const limitOrder: LimitOrder = {
       tokenOut: tokenWanted,
@@ -52,24 +54,35 @@ const LimitOrderPage = () => {
     ];
 
     await connect();
-    const { ciphertext, dataToEncryptHash } = await encrypt(JSON.stringify(limitOrder), accessControlConditions);
-    console.log(ciphertext, dataToEncryptHash);
-    console.log(user.sessionSigs);
+    limitOrder.encryption = await encrypt(JSON.stringify(limitOrder), accessControlConditions);
 
-    const res = await signAndExecute({ ciphertext, dataToEncryptHash }, user.sessionSigs, user.pkp?.publicKey || '');
+
+    setValue(STORAGE_KEY.LIMIT_ORDER, JSON.stringify(limitOrder));
+    setOrder(limitOrder);
+    setTokenWanted('');
+    setPriceWanted('');
+    setAmountIn('');
+    setAmountOut('');
+    setTimeLimit('10');
+  };
+
+  const executeOrder = async (encryption: Encryption) => {
+    const res = await signAndExecute(encryption, user.sessionSigs, user.pkp?.publicKey || '');
 
     console.log(res);
-    // setOrders([...orders, limitOrder]);
-    // setTokenWanted('');
-    // setPriceWanted('');
-    // setAmountIn('');
-    // setAmountOut('');
-    // setTimeLimit('10');
+  }
+
+  const handleCancel = () => {
+    setOrder(null);
+    setValue(STORAGE_KEY.LIMIT_ORDER, '');
   };
 
-  const handleCancel = (index: number) => {
-    setOrders(orders.filter((order, i) => i !== index));
-  };
+  useEffect(() => {
+    const order = getValue(STORAGE_KEY.LIMIT_ORDER);
+    if (order) {
+      setOrder(JSON.parse(order));
+    }
+  }, []);
 
   useEffect(() => {
     const init = async () => {
@@ -82,13 +95,28 @@ const LimitOrderPage = () => {
         setAmountOut(formatEther(amountOut));
         setPriceWanted((1 / Number(formatEther(amountOut))).toString());
       }
-      if (!initialised) {
-        setInitialised(true);
+
+      const tokenInfo = await getTokenInfo(tokenWanted);
+      if (tokenInfo) {
+        setFormTokenInfo({ name: tokenInfo.name, symbol: tokenInfo.symbol });
       }
     }
 
     if (tokenWanted) init();
-  }, []);
+  }, [tokenWanted]);
+
+  useEffect(() => {
+    const init = async () => {
+      if (order?.tokenOut) {
+        const tokenInfo = await getTokenInfo(order.tokenOut);
+        if (tokenInfo) {
+          setOrderTokenInfo({ name: tokenInfo.name, symbol: tokenInfo.symbol });
+        }
+      }
+    }
+
+    init();
+  }, [order]);
 
   useEffect(() => {
     const initBalance = async () => {
@@ -131,7 +159,7 @@ const LimitOrderPage = () => {
 
       <div className="container mx-auto mt-8 p-4">
         {/* Order Form */}
-        <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <form onSubmit={encryptOrder} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="amountIn">
               Amount In (ETH)
@@ -148,7 +176,7 @@ const LimitOrderPage = () => {
           </div>
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="tokenWanted">
-              Token Wanted
+              Token Wanted ${formTokenInfo.name}
             </label>
             <input
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
@@ -161,7 +189,7 @@ const LimitOrderPage = () => {
           </div>
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="priceWanted">
-              Price Wanted
+              Price Wanted (ETH)
             </label>
             <input
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
@@ -175,7 +203,7 @@ const LimitOrderPage = () => {
           </div>
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="amountOut">
-              Amount Out
+              Amount Out ${formTokenInfo.symbol}
             </label>
             <input
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
@@ -212,24 +240,24 @@ const LimitOrderPage = () => {
         </form>
 
         {/* Order List */}
-        <div className="bg-white shadow-md rounded px-8 pt-6 pb-8">
+        <div className="bg-white text-black shadow-md rounded px-8 pt-6 pb-8">
           <h2 className="text-xl font-bold mb-4">Your Orders</h2>
-          {orders.map((order, index) => (
-            <div key={index} className="flex justify-between items-center border-b py-2">
+          { order && (
+            <div className="flex justify-between items-center border-b py-2">
               <div>
-                <p><strong>Token Wanted:</strong> {order.tokenOut}</p>
-                <p><strong>Amount In:</strong> {order.amountIn} ETH</p>
-                <p><strong>Amount Out:</strong> {order.amountOutMinimum}</p>
+                <p><strong>Token Wanted:</strong> {order.tokenOut} {orderTokenInfo.name}</p>
+                <p><strong>Amount In:</strong> {formatEther(order.amountIn)} ETH</p>
+                <p><strong>Amount Out:</strong> {formatEther(order.amountOutMinimum)}{orderTokenInfo.symbol}</p>
                 <p><strong>Time Limit:</strong> {order.deadline}</p>
               </div>
               <button
-                onClick={() => handleCancel(index)}
-                className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                onClick={() => handleCancel()}
+                className="bg-red-500 text-white hover:bg-red-700 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
               >
                 Cancel
               </button>
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>

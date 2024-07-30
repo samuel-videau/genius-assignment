@@ -1,4 +1,3 @@
-import { LimitOrder } from "./types/limit-order";
 
 export const useLocalStorage = () => {
   
@@ -21,27 +20,9 @@ export const useLocalStorage = () => {
     }
   }
 
-  const getLimitOrders = (): LimitOrder[] => {
-    const limitOrders = getValue(STORAGE_KEY.LIMIT_ORDERS);
-    if (limitOrders) {
-      return JSON.parse(limitOrders) as LimitOrder[];
-    }
-    return [];
-  }
-
-  const setLimitOrders = (orders: LimitOrder[]) => {
-    setValue(STORAGE_KEY.LIMIT_ORDERS, JSON.stringify(orders));
-  }
-
-  const addLimitOrder = (order: LimitOrder) => {
-    const orders = getLimitOrders();
-    orders.push(order);
-    setLimitOrders(orders);
-  }
-
-  return { getValue, setValue, setLimitOrders, getLimitOrders, addLimitOrder };
+  return { getValue, setValue };
 }
 
 export enum STORAGE_KEY {
-  LIMIT_ORDERS = 'limit_orders',
+  LIMIT_ORDER = 'limit_order',
 }
