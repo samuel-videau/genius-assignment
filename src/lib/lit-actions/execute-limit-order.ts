@@ -12,6 +12,11 @@ export const executeLimitOrderAction = `(async () => {
       )
     );
   };
+
+  const weth9Address = '0xfff9976782d46cc05630d1f6ebab18b2324d6b14'; 
+  const uniswapRouterAddress = '0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E';
+
+
   const resp = await Lit.Actions.decryptAndCombine({
     accessControlConditions,
     ciphertext,
@@ -23,15 +28,15 @@ export const executeLimitOrderAction = `(async () => {
   const parsed = JSON.parse(resp);
 
   const params = {
-        tokenIn: '0xfff9976782d46cc05630d1f6ebab18b2324d6b14',
-        tokenOut: parsed.tokenOut,
-        fee: parsed.fee,
-        recipient: ethAddress,
-        deadline: parsed.deadline,
-        amountIn: parsed.amountIn, 
-        amountOutMinimum: parsed.amountOutMinimum,
-        sqrtPriceLimitX96: '0'
-      };
+    tokenIn: weth9Address,
+    tokenOut: parsed.tokenOut,
+    fee: parsed.fee,
+    recipient: ethAddress,
+    deadline: parsed.deadline,
+    amountIn: parsed.amountIn, 
+    amountOutMinimum: parsed.amountOutMinimum,
+    sqrtPriceLimitX96: '0'
+  };
 
   
 
@@ -42,8 +47,8 @@ export const executeLimitOrderAction = `(async () => {
 
   const sigName = "sig4";
   const txn = {
-    to: '0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E',
-    value: 0,
+    to: uniswapRouterAddress,
+    value: ethers.BigNumber.from(parsed.amountIn),
     data,
     gasPrice: await provider.getGasPrice(),
     gasLimit: 400000,
@@ -60,9 +65,6 @@ export const executeLimitOrderAction = `(async () => {
     sigName,
   });
 
-  //const chainId = await provider.getNetwork().then(network => network.chainId);
-  //const v = parsedSig.v + (chainId * 2 + 35);
-
   const signedTx = ethers.utils.serializeTransaction(txn, encodeSignature(signature));
 
   console.log('signedTx ===>', signedTx);
@@ -70,16 +72,11 @@ export const executeLimitOrderAction = `(async () => {
   let res = await Lit.Actions.runOnce({ waitForResponse: true, name: "txnSender" }, async () => {
     try {
       const tx = await provider.sendTransaction(signedTx);
-      return tx; // return the tx to be broadcast to all other nodes
+      return JSON.stringify(tx); // return the tx to be broadcast to all other nodes
     } catch (e) {
       return JSON.stringify(e);
     }
   });
-
-  console.log('res ===>', JSON.stringify(res.message));
-    console.log('res ===>', JSON.stringify(res.transaction));
-  console.log('res ===>', JSON.stringify(res.receipt));
-
 
   Lit.Actions.setResponse({ response: JSON.stringify({res}) });
 })();`
