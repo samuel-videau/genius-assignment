@@ -1,4 +1,4 @@
 export interface Encryption {
-    ciphertext: string, 
-    dataToEncryptHash: string
+  ciphertext: string;
+  dataToEncryptHash: string;
 }

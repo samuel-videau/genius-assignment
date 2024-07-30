@@ -1,9 +1,10 @@
-'use client'
+'use client';
 
-import React, { use, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Loader, Wallet } from 'lucide-react';
-import { useUniV3 } from '@/lib/use-uni-v3';
 import { formatEther, parseEther } from 'ethers/lib/utils';
+
+import { useUniV3 } from '@/lib/use-uni-v3';
 import { UNI_TOKEN_ADR, WETH_ADR } from '@/globals';
 import { useLit } from '@/lib/use-lit';
 import { STORAGE_KEY, useLocalStorage } from '@/lib/use-local-storage';
@@ -33,8 +34,8 @@ const LimitOrderPage = () => {
   const [userBalance, setUserBalance] = useState('0');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { getAmountOut, generateExactInputSingleETHForTokenBytecode } = useUniV3();
-  const {encrypt, connect, signAndExecute} = useLit();
+  const { getAmountOut } = useUniV3();
+  const { encrypt, connect, signAndExecute } = useLit();
   const { setValue, getValue } = useLocalStorage();
   const { getBalanceOf, getTokenInfo } = useEthers();
   const user = useAppSelector((state) => state.user);
@@ -49,9 +50,9 @@ const LimitOrderPage = () => {
         fee: 3000,
         amountIn: parseEther(Number(amountIn).toFixed(17)).toString(),
         amountOutMinimum: parseEther(Number(amountOut).toFixed(17)).toString(),
-        deadline: (Date.now() + Number(timeLimit) * 60 * 1000).toString()
-      }
-  
+        deadline: (Date.now() + Number(timeLimit) * 60 * 1000).toString(),
+      };
+
       const accessControlConditions = [
         {
           contractAddress: '',
@@ -65,11 +66,10 @@ const LimitOrderPage = () => {
           },
         },
       ];
-  
+
       await connect();
       limitOrder.encryption = await encrypt(JSON.stringify(limitOrder), accessControlConditions);
-  
-  
+
       setValue(STORAGE_KEY.LIMIT_ORDER, JSON.stringify(limitOrder));
       setOrder(limitOrder);
       setTokenWanted('');
@@ -77,7 +77,6 @@ const LimitOrderPage = () => {
       setAmountIn('');
       setAmountOut('');
       setTimeLimit('10');
-    } catch (error) {
     } finally {
       setIsLoading(false);
     }
@@ -87,7 +86,12 @@ const LimitOrderPage = () => {
     setIsLoading(true);
     try {
       await connect();
-      const res = await signAndExecute(encryption, user.sessionSigs, user.pkp?.publicKey || '', user.pkp?.ethAddress || '');
+      const res = await signAndExecute(
+        encryption,
+        user.sessionSigs,
+        user.pkp?.publicKey || '',
+        user.pkp?.ethAddress || '',
+      );
       console.log(res);
       // Handle successful execution here (e.g., show a success message)
     } catch (error) {
@@ -96,7 +100,7 @@ const LimitOrderPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   const handleCancel = () => {
     setOrder(null);
@@ -117,7 +121,12 @@ const LimitOrderPage = () => {
       }
 
       if (!priceWanted) {
-        const amountOut = await getAmountOut(parseEther('1').toString(), WETH_ADR, tokenWanted, 3000);
+        const amountOut = await getAmountOut(
+          parseEther('1').toString(),
+          WETH_ADR,
+          tokenWanted,
+          3000,
+        );
         setAmountOut(formatEther(amountOut));
         setPriceWanted((1 / Number(formatEther(amountOut))).toString());
       }
@@ -126,7 +135,7 @@ const LimitOrderPage = () => {
       if (tokenInfo) {
         setFormTokenInfo({ name: tokenInfo.name, symbol: tokenInfo.symbol });
       }
-    }
+    };
 
     if (tokenWanted) init();
   }, [tokenWanted]);
@@ -139,7 +148,7 @@ const LimitOrderPage = () => {
           setOrderTokenInfo({ name: tokenInfo.name, symbol: tokenInfo.symbol });
         }
       }
-    }
+    };
 
     init();
   }, [order]);
@@ -150,10 +159,10 @@ const LimitOrderPage = () => {
         const balance = await getBalanceOf(user.pkp?.ethAddress);
         setUserBalance(formatEther(balance));
       }
-    }
+    };
 
     initBalance();
-  }, [user.pkp?.ethAddress])
+  }, [user.pkp?.ethAddress]);
 
   useEffect(() => {
     if (amountIn && priceWanted) {
@@ -163,7 +172,7 @@ const LimitOrderPage = () => {
 
   const updateAmountOut = async () => {
     console.log('Updating amount out');
-    console.log((Number(amountIn) / Number(priceWanted)).toString())
+    console.log((Number(amountIn) / Number(priceWanted)).toString());
     setAmountOut((Number(amountIn) / Number(priceWanted)).toString());
   };
 
@@ -268,34 +277,43 @@ const LimitOrderPage = () => {
 
         {/* Order List */}
         <div className="bg-white text-black shadow-md rounded px-8 pt-6 pb-8">
-        <h2 className="text-xl font-bold mb-4">Your Orders</h2>
-        { order && (
-          <div className="flex justify-between items-center border-b py-2">
-            <div>
-              <p><strong>Token Wanted:</strong> {order.tokenOut} {orderTokenInfo.name}</p>
-              <p><strong>Amount In:</strong> {formatEther(order.amountIn)} ETH</p>
-              <p><strong>Amount Out:</strong> {formatEther(order.amountOutMinimum)} {orderTokenInfo.symbol}</p>
-              <p><strong>Time Limit:</strong> {order.deadline}</p>
+          <h2 className="text-xl font-bold mb-4">Your Orders</h2>
+          {order && (
+            <div className="flex justify-between items-center border-b py-2">
+              <div>
+                <p>
+                  <strong>Token Wanted:</strong> {order.tokenOut} {orderTokenInfo.name}
+                </p>
+                <p>
+                  <strong>Amount In:</strong> {formatEther(order.amountIn)} ETH
+                </p>
+                <p>
+                  <strong>Amount Out:</strong> {formatEther(order.amountOutMinimum)}{' '}
+                  {orderTokenInfo.symbol}
+                </p>
+                <p>
+                  <strong>Time Limit:</strong> {order.deadline}
+                </p>
+              </div>
+              <div className="flex flex-col space-y-2">
+                <button
+                  onClick={() => executeOrder(order.encryption as Encryption)}
+                  disabled={isLoading}
+                  className={`bg-green-500 text-white hover:bg-green-700 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {isLoading ? 'Executing...' : 'Execute'}
+                </button>
+                <button
+                  onClick={() => handleCancel()}
+                  disabled={isLoading}
+                  className={`bg-red-500 text-white hover:bg-red-700 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-            <div className="flex flex-col space-y-2">
-              <button
-                onClick={() => executeOrder(order.encryption as Encryption)}
-                disabled={isLoading}
-                className={`bg-green-500 text-white hover:bg-green-700 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {isLoading ? 'Executing...' : 'Execute'}
-              </button>
-              <button
-                onClick={() => handleCancel()}
-                disabled={isLoading}
-                className={`bg-red-500 text-white hover:bg-red-700 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
       </div>
     </div>
   );

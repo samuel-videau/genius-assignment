@@ -1,5 +1,4 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-
 import { IRelayPKP, SessionSigsMap } from '@lit-protocol/types';
 
 export interface UserState {
@@ -9,7 +8,7 @@ export interface UserState {
 
 const initialState: UserState = {
   sessionSigs: {},
-  pkp: null
+  pkp: null,
 };
 
 export const userSlice = createSlice({
@@ -27,10 +26,6 @@ export const userSlice = createSlice({
 });
 
 // Action creators are generated for each case reducer function
-export const {
-  setPkp,
-  setSessionSigs,
-  resetUser
-} = userSlice.actions;
+export const { setPkp, setSessionSigs, resetUser } = userSlice.actions;
 
 export default userSlice.reducer;

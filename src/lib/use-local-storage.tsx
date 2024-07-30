@@ -1,7 +1,5 @@
-
 export const useLocalStorage = () => {
-  
-  const getValue = (key: STORAGE_KEY ): string| null => {
+  const getValue = (key: STORAGE_KEY): string | null => {
     try {
       const item = window.localStorage.getItem(key);
       return item;
@@ -9,19 +7,18 @@ export const useLocalStorage = () => {
       console.error(error);
       return null;
     }
-  }
+  };
 
   const setValue = (key: STORAGE_KEY, value: string) => {
     try {
-      window.localStorage
-        .setItem(key, value);
+      window.localStorage.setItem(key, value);
     } catch (error) {
       console.error(error);
     }
-  }
+  };
 
   return { getValue, setValue };
-}
+};
 
 export enum STORAGE_KEY {
   LIMIT_ORDER = 'limit_order',

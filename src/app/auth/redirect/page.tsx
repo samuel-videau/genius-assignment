@@ -1,10 +1,11 @@
-'use client'
+'use client';
 
 import React, { useEffect, useState } from 'react';
-import { LIT_AUTH_REDIRECT_URL, LIT_NETWORK } from "@/globals";
-import { useLit } from "@/lib/use-lit";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
+
+import { LIT_AUTH_REDIRECT_URL, LIT_NETWORK } from '@/globals';
+import { useLit } from '@/lib/use-lit';
 import { useAppDispatch } from '@/store/hooks';
 import { setPkp, setSessionSigs } from '@/store/user-reducer';
 
@@ -23,38 +24,39 @@ export default function Redirect() {
         setLoading(true);
         await connect();
         console.log(`Connected to ${LIT_NETWORK}`);
-        
-        const fullPath = LIT_AUTH_REDIRECT_URL + (searchParams.toString() ? `?${searchParams.toString()}` : '');
+
+        const fullPath =
+          LIT_AUTH_REDIRECT_URL + (searchParams.toString() ? `?${searchParams.toString()}` : '');
         console.log(fullPath);
-        
+
         const auth = await handleRedirect(fullPath);
         console.log(auth);
-        
+
         let pkps = await fetchPkps(auth);
 
         console.log(pkps);
-        
+
         if (pkps.length === 0) {
           await mintPkp(auth);
           pkps = await fetchPkps(auth);
           console.log('Minted PKP');
           console.log(pkps);
         }
-        
+
         dispatch(setPkp(pkps[0]));
         const session = await getSessionSigs(auth, pkps[0]);
         console.log(session);
         dispatch(setSessionSigs(session));
-        
+
         // Redirect to dashboard
         router.push('/swap');
       } catch (err) {
-        console.error("Initialization error:", err);
-        setError("An error occurred during initialization. Please try again.");
+        console.error('Initialization error:', err);
+        setError('An error occurred during initialization. Please try again.');
       } finally {
         setLoading(false);
       }
-    }
+    };
 
     init();
   }, []);

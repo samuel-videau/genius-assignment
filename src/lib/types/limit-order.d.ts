@@ -1,10 +1,10 @@
-import { Encryption } from "./encryption";
+import { Encryption } from './encryption';
 
 export interface LimitOrder {
-    tokenOut: string;
-    fee: number;
-    amountIn: string;
-    amountOutMinimum: string;
-    deadline: string;
-    encryption?: Encryption;
-  }
+  tokenOut: string;
+  fee: number;
+  amountIn: string;
+  amountOutMinimum: string;
+  deadline: string;
+  encryption?: Encryption;
+}
