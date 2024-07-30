@@ -115,7 +115,7 @@ export const useLit = () => {
       };
     }
 
-    const signAndExecute = async (encryption: Encryption, sessionSigs: SessionSigsMap, publicKey: string): Promise<void> => {
+    const signAndExecute = async (encryption: Encryption, sessionSigs: SessionSigsMap, publicKey: string): Promise<any> => {
       const res = await client.executeJs({
         code: executeLimitOrderAction,
         sessionSigs,
@@ -136,7 +136,7 @@ export const useLit = () => {
         ]}
       });
 
-      console.log(res);
+      return res;
     }
 
     return {

@@ -9,7 +9,7 @@ import { useLit } from '@/lib/use-lit';
 import { useLocalStorage } from '@/lib/use-local-storage';
 import { LimitOrder } from '@/lib/types/limit-order';
 import { useAppSelector } from '@/store/hooks';
-import { ethers } from 'ethers';
+import { useEthers } from '@/lib/use-ethers';
 
 const LimitOrderPage = () => {
   const [amountIn, setAmountIn] = useState('1');
@@ -19,14 +19,13 @@ const LimitOrderPage = () => {
   const [timeLimit, setTimeLimit] = useState('10');
   const [orders, setOrders] = useState<LimitOrder[]>([]);
   const [initialised, setInitialised] = useState(false);
+  const [userBalance, setUserBalance] = useState('0');
 
   const { getAmountOut, generateExactInputSingleETHForTokenBytecode } = useUniV3();
   const {encrypt, connect, signAndExecute} = useLit();
   const { addLimitOrder } = useLocalStorage();
+  const { getBalanceOf, sendTransaction } = useEthers();
   const user = useAppSelector((state) => state.user);
-
-  const userAddress = '0x1234...5678'; // Replace with actual user address
-  const ethBalance = '1.5 ETH'; // Replace with actual ETH balance
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,10 +56,9 @@ const LimitOrderPage = () => {
     console.log(ciphertext, dataToEncryptHash);
     console.log(user.sessionSigs);
 
-    await testLitAction(limitOrder);
+    const res = await signAndExecute({ ciphertext, dataToEncryptHash }, user.sessionSigs, user.pkp?.publicKey || '');
 
-    await signAndExecute({ ciphertext, dataToEncryptHash }, user.sessionSigs, user.pkp?.publicKey || '');
-
+    console.log(res);
     // setOrders([...orders, limitOrder]);
     // setTokenWanted('');
     // setPriceWanted('');
@@ -93,6 +91,17 @@ const LimitOrderPage = () => {
   }, []);
 
   useEffect(() => {
+    const initBalance = async () => {
+      if (user.pkp?.ethAddress) {
+        const balance = await getBalanceOf(user.pkp?.ethAddress);
+        setUserBalance(formatEther(balance));
+      }
+    }
+
+    initBalance();
+  }, [user.pkp?.ethAddress])
+
+  useEffect(() => {
     if (amountIn && priceWanted) {
       updateAmountOut();
     }
@@ -104,38 +113,6 @@ const LimitOrderPage = () => {
     setAmountOut((Number(amountIn) / Number(priceWanted)).toString());
   };
 
-  const testLitAction = async (parsed: LimitOrder) => { 
-    const params = {
-      tokenIn: '0xfff9976782d46cc05630d1f6ebab18b2324d6b14',
-      tokenOut: parsed.tokenOut,
-      fee: parsed.fee,
-      recipient: '0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E',
-      deadline: parsed.deadline,
-      amountIn: '0', 
-      amountOutMinimum: parsed.amountOutMinimum,
-      sqrtPriceLimitX96: '0'
-    };
-
-    const swapRouterInterface = new ethers.utils.Interface(['function exactInputSingle((address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 deadline, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96)) external payable returns (uint256 amountOut)']);
-
-    const data = swapRouterInterface.encodeFunctionData('exactInputSingle', [params]);
-    const provider = new ethers.providers.JsonRpcProvider('https://1rpc.io/sepolia');
-
-    const sigName = "sig1";
-    const txn = {
-      to: '0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E',
-      value: ethers.BigNumber.from(parsed.amountIn),
-      data,
-      gasPrice: await provider.getGasPrice(),
-      nonce: 0
-    }
-
-    const serializedTx = ethers.utils.serializeTransaction(txn);
-    let hash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(serializedTx));
-    // encode the message into an uint8array for signing
-    const toSign = await new TextEncoder().encode(hash);
-  };
-
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Navbar */}
@@ -145,9 +122,9 @@ const LimitOrderPage = () => {
           <div className="flex items-center space-x-4">
             <div className="flex items-center">
               <Wallet className="mr-2" />
-              <span>{userAddress}</span>
+              <span>{user.pkp?.ethAddress}</span>
             </div>
-            <div>{ethBalance}</div>
+            <div>{userBalance}</div>
           </div>
         </div>
       </nav>

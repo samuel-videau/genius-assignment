@@ -8,7 +8,12 @@ export const useEthers = () => {
         return await provider.getBalance(address);
     }
 
+    const sendTransaction = async (transaction: string) => {
+        return await provider.sendTransaction(transaction);
+    }
+
     return {
-        getBalanceOf
+        getBalanceOf,
+        sendTransaction
     }
 }

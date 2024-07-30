@@ -1,4 +1,10 @@
 export const executeLimitOrderAction = `(async () => {
+  const encodeSignature = (signature) => {
+    const jsonSignature = JSON.parse(signature);
+    jsonSignature.r = '0x' + jsonSignature.r.substring(2);
+    jsonSignature.s = '0x' + jsonSignature.s;
+    return ethers.utils.joinSignature(jsonSignature);
+  };
   const resp = await Lit.Actions.decryptAndCombine({
     accessControlConditions,
     ciphertext,
@@ -31,19 +37,40 @@ export const executeLimitOrderAction = `(async () => {
     value: ethers.BigNumber.from(parsed.amountIn),
     data,
     gasPrice: await provider.getGasPrice(),
+    gasLimit: 400000,
     nonce: 0
   }
 
-  const serializedTx = ethers.utils.serializeTransaction(txn);
-  let hash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(serializedTx));
-  // encode the message into an uint8array for signing
-  const toSign = await new TextEncoder().encode(hash);
+  const toSign = ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.toUtf8Bytes(txn)));
 
   const signature = await Lit.Actions.signAndCombineEcdsa({
-      toSign,
-      publicKey,
-      sigName,
+    toSign: toSign,
+    publicKey: publicKey?.startsWith('0x')
+      ? publicKey.split('0x')[1]
+      : publicKey,
+    sigName,
   });
 
-  Lit.Actions.setResponse({ response: JSON.stringify({params, parsed}) });
+  //const chainId = await provider.getNetwork().then(network => network.chainId);
+  //const v = parsedSig.v + (chainId * 2 + 35);
+
+  const signedTx = ethers.utils.serializeTransaction(txn, encodeSignature(signature));
+
+  console.log('signedTx ===>', signedTx);
+
+  let res = await Lit.Actions.runOnce({ waitForResponse: true, name: "txnSender" }, async () => {
+    try {
+      const tx = await provider.sendTransaction(signedTx);
+      return tx; // return the tx to be broadcast to all other nodes
+    } catch (e) {
+      return JSON.stringify(e);
+    }
+  });
+
+  console.log('res ===>', JSON.stringify(res.message));
+    console.log('res ===>', JSON.stringify(res.transaction));
+  console.log('res ===>', JSON.stringify(res.receipt));
+
+
+  Lit.Actions.setResponse({ response: JSON.stringify({res}) });
 })();`
