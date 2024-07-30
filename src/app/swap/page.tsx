@@ -1,7 +1,7 @@
 'use client'
 
 import React, { use, useEffect, useState } from 'react';
-import { Wallet } from 'lucide-react';
+import { Loader, Wallet } from 'lucide-react';
 import { useUniV3 } from '@/lib/use-uni-v3';
 import { formatEther, parseEther } from 'ethers/lib/utils';
 import { UNI_TOKEN_ADR, WETH_ADR } from '@/globals';
@@ -11,6 +11,15 @@ import { LimitOrder } from '@/lib/types/limit-order';
 import { useAppSelector } from '@/store/hooks';
 import { useEthers } from '@/lib/use-ethers';
 import { Encryption } from '@/lib/types/encryption';
+
+const LoadingOverlay = () => (
+  <div className="fixed text-black inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-lg shadow-lg flex items-center">
+      <Loader className="animate-spin mr-3" />
+      <span className="text-lg font-semibold">Loading...</span>
+    </div>
+  </div>
+);
 
 const LimitOrderPage = () => {
   const [amountIn, setAmountIn] = useState('1');
@@ -22,6 +31,7 @@ const LimitOrderPage = () => {
   const [timeLimit, setTimeLimit] = useState('10');
   const [order, setOrder] = useState<LimitOrder | null>(null);
   const [userBalance, setUserBalance] = useState('0');
+  const [isLoading, setIsLoading] = useState(false);
 
   const { getAmountOut, generateExactInputSingleETHForTokenBytecode } = useUniV3();
   const {encrypt, connect, signAndExecute} = useLit();
@@ -30,46 +40,62 @@ const LimitOrderPage = () => {
   const user = useAppSelector((state) => state.user);
 
   const encryptOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const limitOrder: LimitOrder = {
-      tokenOut: tokenWanted,
-      fee: 3000,
-      amountIn: parseEther(Number(amountIn).toFixed(17)).toString(),
-      amountOutMinimum: parseEther(Number(amountOut).toFixed(17)).toString(),
-      deadline: (Date.now() + Number(timeLimit) * 60 * 1000).toString()
-    }
+    setIsLoading(true);
 
-    const accessControlConditions = [
-      {
-        contractAddress: '',
-        standardContractType: '',
-        chain: 'ethereum',
-        method: 'eth_getBalance',
-        parameters: [':userAddress', 'latest'],
-        returnValueTest: {
-          comparator: '>=',
-          value: '0',
+    try {
+      e.preventDefault();
+      const limitOrder: LimitOrder = {
+        tokenOut: tokenWanted,
+        fee: 3000,
+        amountIn: parseEther(Number(amountIn).toFixed(17)).toString(),
+        amountOutMinimum: parseEther(Number(amountOut).toFixed(17)).toString(),
+        deadline: (Date.now() + Number(timeLimit) * 60 * 1000).toString()
+      }
+  
+      const accessControlConditions = [
+        {
+          contractAddress: '',
+          standardContractType: '',
+          chain: 'ethereum',
+          method: 'eth_getBalance',
+          parameters: [':userAddress', 'latest'],
+          returnValueTest: {
+            comparator: '>=',
+            value: '0',
+          },
         },
-      },
-    ];
-
-    await connect();
-    limitOrder.encryption = await encrypt(JSON.stringify(limitOrder), accessControlConditions);
-
-
-    setValue(STORAGE_KEY.LIMIT_ORDER, JSON.stringify(limitOrder));
-    setOrder(limitOrder);
-    setTokenWanted('');
-    setPriceWanted('');
-    setAmountIn('');
-    setAmountOut('');
-    setTimeLimit('10');
+      ];
+  
+      await connect();
+      limitOrder.encryption = await encrypt(JSON.stringify(limitOrder), accessControlConditions);
+  
+  
+      setValue(STORAGE_KEY.LIMIT_ORDER, JSON.stringify(limitOrder));
+      setOrder(limitOrder);
+      setTokenWanted('');
+      setPriceWanted('');
+      setAmountIn('');
+      setAmountOut('');
+      setTimeLimit('10');
+    } catch (error) {
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const executeOrder = async (encryption: Encryption) => {
-    const res = await signAndExecute(encryption, user.sessionSigs, user.pkp?.publicKey || '');
-
-    console.log(res);
+    setIsLoading(true);
+    try {
+      await connect();
+      const res = await signAndExecute(encryption, user.sessionSigs, user.pkp?.publicKey || '');
+      console.log(res);
+      // Handle successful execution here (e.g., show a success message)
+    } catch (error) {
+      console.error('Error executing order:', error);
+      // Handle error here (e.g., show an error message)
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const handleCancel = () => {
@@ -143,6 +169,7 @@ const LimitOrderPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {isLoading && <LoadingOverlay />}
       {/* Navbar */}
       <nav className="bg-blue-600 text-white p-4">
         <div className="container mx-auto flex justify-between items-center">
@@ -241,24 +268,34 @@ const LimitOrderPage = () => {
 
         {/* Order List */}
         <div className="bg-white text-black shadow-md rounded px-8 pt-6 pb-8">
-          <h2 className="text-xl font-bold mb-4">Your Orders</h2>
-          { order && (
-            <div className="flex justify-between items-center border-b py-2">
-              <div>
-                <p><strong>Token Wanted:</strong> {order.tokenOut} {orderTokenInfo.name}</p>
-                <p><strong>Amount In:</strong> {formatEther(order.amountIn)} ETH</p>
-                <p><strong>Amount Out:</strong> {formatEther(order.amountOutMinimum)}{orderTokenInfo.symbol}</p>
-                <p><strong>Time Limit:</strong> {order.deadline}</p>
-              </div>
+        <h2 className="text-xl font-bold mb-4">Your Orders</h2>
+        { order && (
+          <div className="flex justify-between items-center border-b py-2">
+            <div>
+              <p><strong>Token Wanted:</strong> {order.tokenOut} {orderTokenInfo.name}</p>
+              <p><strong>Amount In:</strong> {formatEther(order.amountIn)} ETH</p>
+              <p><strong>Amount Out:</strong> {formatEther(order.amountOutMinimum)} {orderTokenInfo.symbol}</p>
+              <p><strong>Time Limit:</strong> {order.deadline}</p>
+            </div>
+            <div className="flex flex-col space-y-2">
+              <button
+                onClick={() => executeOrder(order.encryption as Encryption)}
+                disabled={isLoading}
+                className={`bg-green-500 text-white hover:bg-green-700 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {isLoading ? 'Executing...' : 'Execute'}
+              </button>
               <button
                 onClick={() => handleCancel()}
-                className="bg-red-500 text-white hover:bg-red-700 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                disabled={isLoading}
+                className={`bg-red-500 text-white hover:bg-red-700 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 Cancel
               </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
       </div>
     </div>
   );
